@@ -9,7 +9,7 @@ use Drupal\webform\WebformSubmissionInterface;
  *
  * @WebformElement(
  *   id = "webform_address",
- *   label = @Translation("Address"),
+ *   label = @Translation("Basic address"),
  *   description = @Translation("Provides a form element to collect address information (street, city, state, zip)."),
  *   category = @Translation("Composite elements"),
  *   multiline = TRUE,

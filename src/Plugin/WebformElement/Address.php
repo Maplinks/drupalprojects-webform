@@ -22,6 +22,7 @@ use Drupal\webform\WebformSubmissionInterface;
  *   category = @Translation("Composite elements"),
  *   composite = TRUE,
  *   multiline = TRUE,
+ *   states_wrapper = TRUE,
  *   dependencies = {
  *     "address",
  *   }
@@ -57,44 +58,89 @@ class Address extends WebformCompositeBase {
   /**
    * {@inheritdoc}
    */
+  public function prepare(array &$element, WebformSubmissionInterface $webform_submission = NULL) {
+    parent::prepare($element, $webform_submission);
+
+    $element['#element_validate'][] = [get_class($this), 'validateAddress'];
+  }
+  /**
+   * {@inheritdoc}
+   */
   public function getCompositeElements() {
     return [];
   }
 
   /**
    * {@inheritdoc}
+   *
+   * @see \Drupal\address\Plugin\Field\FieldType\AddressItem::schema
    */
   public function initializeCompositeElements(array &$element) {
     $element['#webform_composite_elements'] = [
       'given_name' => [
         '#title' => $this->t('Given name'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'family_name' => [
         '#title' => $this->t('Family name'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
+      ],
+      'additional_name' => [
+        '#title' => $this->t('Additional name'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'organization' => [
         '#title' => $this->t('Organization'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'address_line1' => [
         '#title' => $this->t('Address line 1'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'address_line2' => [
         '#title' => $this->t('Address line 2'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'postal_code' => [
         '#title' => $this->t('Postal code'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'locality' => [
         '#title' => $this->t('Locality'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
+      ],
+      'dependent_locality' => [
+        '#title' => $this->t('Dependent_locality'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'administrative_area' => [
         '#title' => $this->t('Administrative area'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
       'country_code' => [
         '#title' => $this->t('Country code'),
+        '#type' => 'textfield',
+        '#maxlength' => 2,
       ],
       'langcode' => [
         '#title' => $this->t('Language code'),
+        '#type' => 'textfield',
+        '#maxlength' => 32,
+      ],
+      'sorting_code' => [
+        '#title' => $this->t('Sorting code'),
+        '#type' => 'textfield',
+        '#maxlength' => 255,
       ],
     ];
   }
@@ -111,7 +157,6 @@ class Address extends WebformCompositeBase {
       return parent::formatHtmlItem($element, $webform_submission, $options);
     }
   }
-
 
   /**
    * {@inheritdoc}
@@ -152,13 +197,14 @@ class Address extends WebformCompositeBase {
     $country_repository = \Drupal::service('address.country_repository');
 
     $value = $this->getValue($element, $webform_submission);
-    if (empty($value)) {
+    // Skip if value or country code is empty.
+    if (empty($value) || empty($value['country_code'])) {
       return [];
     }
 
     $build = [
-      '#prefix' => '<p class="address" translate="no">',
-      '#suffix' => '</p>',
+      '#prefix' => '<div class="address" translate="no">',
+      '#suffix' => '</div>',
       '#post_render' => [
         ['\Drupal\address\Plugin\Field\FieldFormatter\AddressDefaultFormatter', 'postRender'],
       ],
@@ -261,6 +307,16 @@ class Address extends WebformCompositeBase {
   /**
    * {@inheritdoc}
    */
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    $values = $form_state->getValues();
+    $values['used_fields'] = array_filter($values['used_fields']);
+    $form_state->setValues($values);
+    parent::validateConfigurationForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getTestValues(array $element, WebformInterface $webform, array $options = []) {
     return [
       [
@@ -275,6 +331,17 @@ class Address extends WebformCompositeBase {
         'langcode' => 'en',
       ],
     ];
+  }
+
+  /**
+   * Form API callback. Make sure address element value includes a country code.
+   */
+  public static function validateAddress(array &$element, FormStateInterface $form_state, array &$completed_form) {
+    $name = $element['#name'];
+    $value = $form_state->getValue($name);
+    if (empty($value['country_code'])) {
+      $form_state->setValue($name, NULL);
+    }
   }
 
 }

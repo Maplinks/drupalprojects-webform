@@ -36,7 +36,21 @@ class Address extends WebformCompositeBase {
    * {@inheritdoc}
    */
   public function getDefaultProperties() {
-    $properties = parent::getDefaultProperties() + static::getDefaultMultipleProperties() + [
+    $properties = [
+      // Element settings.
+      'title' => '',
+      'default_value' => '',
+      // Form validation.
+      'required' => FALSE,
+      'required_error' => '',
+      // Submission display.
+      'format' => $this->getItemDefaultFormat(),
+      'format_html' => '',
+      'format_text' => '',
+      'format_items' => $this->getItemsDefaultFormat(),
+      'format_items_html' => '',
+      'format_items_text' => '',
+      // Address settings.
       'available_countries' => [],
       'used_fields' => [
         'administrativeArea' => 'administrativeArea',
@@ -52,7 +66,7 @@ class Address extends WebformCompositeBase {
         'familyName' => 'familyName',
       ],
       'langcode_override' => '',
-    ];
+    ] + static::getDefaultMultipleProperties();
     unset($properties['multiple__header']);
     return $properties;
   }

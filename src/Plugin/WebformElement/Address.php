@@ -36,7 +36,7 @@ class Address extends WebformCompositeBase {
    * {@inheritdoc}
    */
   public function getDefaultProperties() {
-    return parent::getDefaultProperties() + [
+    $properties = parent::getDefaultProperties() + static::getDefaultMultipleProperties() + [
       'available_countries' => [],
       'used_fields' => [
         'administrativeArea' => 'administrativeArea',
@@ -53,6 +53,8 @@ class Address extends WebformCompositeBase {
       ],
       'langcode_override' => '',
     ];
+    unset($properties['multiple__header']);
+    return $properties;
   }
 
   /**
@@ -151,7 +153,7 @@ class Address extends WebformCompositeBase {
   protected function formatHtmlItem(array $element, WebformSubmissionInterface $webform_submission, array $options = []) {
     $format = $this->getItemFormat($element);
     if ($format === 'value') {
-      return $this->buildAddress($element, $webform_submission);
+      return $this->buildAddress($element, $webform_submission, $options);
     }
     else {
       return parent::formatHtmlItem($element, $webform_submission, $options);
@@ -164,9 +166,9 @@ class Address extends WebformCompositeBase {
   protected function formatTextItem(array $element, WebformSubmissionInterface $webform_submission, array $options = []) {
     $format = $this->getItemFormat($element);
     if ($format === 'value') {
-      $build = $this->buildAddress($element, $webform_submission);
+      $build = $this->buildAddress($element, $webform_submission, $options);
       $html = \Drupal::service('renderer')->renderPlain($build);
-      return MailFormatHelper::htmlToText($html);
+      return trim(MailFormatHelper::htmlToText($html));
     }
     else {
       return parent::formatTextItem($element, $webform_submission, $options);
@@ -183,6 +185,8 @@ class Address extends WebformCompositeBase {
    *   An element.
    * @param \Drupal\webform\WebformSubmissionInterface $webform_submission
    *   A webform submission.
+   * @param array $options
+   *   An array of options.
    *
    * @return array
    *   A render array containing the formatted address.
@@ -190,13 +194,13 @@ class Address extends WebformCompositeBase {
    * @see \Drupal\address\Plugin\Field\FieldFormatter\AddressDefaultFormatter::viewElements
    * @see \Drupal\address\Plugin\Field\FieldFormatter\AddressDefaultFormatter::viewElement
    */
-  protected function buildAddress(array $element, WebformSubmissionInterface $webform_submission) {
+  protected function buildAddress(array $element, WebformSubmissionInterface $webform_submission, $options) {
     /** @var \CommerceGuys\Addressing\AddressFormat\AddressFormatRepositoryInterface $address_format_repository */
     $address_format_repository = \Drupal::service('address.address_format_repository');
     /** @var \CommerceGuys\Addressing\Country\CountryRepositoryInterface $country_repository */
     $country_repository = \Drupal::service('address.country_repository');
 
-    $value = $this->getValue($element, $webform_submission);
+    $value = $this->getValue($element, $webform_submission, $options);
     // Skip if value or country code is empty.
     if (empty($value) || empty($value['country_code'])) {
       return [];
@@ -246,7 +250,7 @@ class Address extends WebformCompositeBase {
         '#type' => 'html_tag',
         '#tag' => 'span',
         '#attributes' => ['class' => [$class]],
-        '#value' => Html::escape($value[$property]),
+        '#value' => (isset($value[$property])) ? Html::escape($value[$property]) : '',
         '#placeholder' => '%' . $field,
       ];
     }
@@ -339,8 +343,19 @@ class Address extends WebformCompositeBase {
   public static function validateAddress(array &$element, FormStateInterface $form_state, array &$completed_form) {
     $name = $element['#name'];
     $value = $form_state->getValue($name);
-    if (empty($value['country_code'])) {
-      $form_state->setValue($name, NULL);
+    if (empty($element['#multiple'])) {
+      if (empty($value['country_code'])) {
+        $form_state->setValue($name, NULL);
+      }
+    }
+    else {
+      foreach ($value as $index => $item) {
+        if (empty($item['country_code'])) {
+          unset($value[$index]);
+        }
+      }
+      $value = array_values($value);
+      $form_state->setValue($name, $value ?: NULL);
     }
   }
 

@@ -31,15 +31,16 @@ class WebformElementAddressTest extends WebformElementTestBase {
    * Tests address element.
    */
   public function testAddress() {
+    $this->drupalLogin($this->rootUser);
+
     $webform = Webform::load('test_element_address');
 
     /**************************************************************************/
     // Processing.
     /**************************************************************************/
 
-
-    // Check submit.
-    $this->postSubmission($webform);
+    // Check submitted value.
+    $sid = $this->postSubmission($webform);
     $this->assertRaw("address:
   country_code: US
   langcode: en
@@ -68,7 +69,42 @@ address_advanced:
   organization: null
   sorting_code: null
   dependent_locality: null
-address_none: null");
+address_none: null
+address_multiple:
+  - country_code: US
+    langcode: en
+    given_name: John
+    family_name: Smith
+    organization: 'Google Inc.'
+    address_line1: '1098 Alta Ave'
+    address_line2: ''
+    locality: 'Mountain View'
+    administrative_area: CA
+    postal_code: '94043'");
+
+    // Check text formatting.
+    $this->drupalGet("/admin/structure/webform/manage/test_element_address/submission/$sid/text");
+    $this->assertRaw('address_basic:
+John Smith
+Google Inc.
+1098 Alta Ave
+Mountain View, CA 94043
+United States
+
+address_advanced:
+1098 Alta Ave
+Mountain View, CA 94043
+United States
+
+address_none:
+{Empty}
+
+address_multiple:
+- John Smith
+  Google Inc.
+  1098 Alta Ave
+  Mountain View, CA 94043
+  United States');
 
     /**************************************************************************/
     // Schema.

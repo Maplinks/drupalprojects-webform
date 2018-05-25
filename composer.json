@@ -29,5 +29,8 @@
         "drush.services.yml": "^9"
       }
     }
+  },
+  "require-dev": {
+    "drupal/address": "~1.4"
   }
 }

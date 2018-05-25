@@ -203,12 +203,13 @@ class Address extends WebformCompositeBase {
     /** @var \CommerceGuys\Addressing\Country\CountryRepositoryInterface $country_repository */
     $country_repository = \Drupal::service('address.country_repository');
 
-    $values = $this->getValue($element, $webform_submission, $options);
+    $value = $this->getValue($element, $webform_submission, $options);
     // Skip if value or country code is empty.
-    if (empty($values) || empty($values['country_code'])) {
+    if (empty($value) || empty($value['country_code'])) {
       return [];
     }
 
+    // @see \Drupal\address\Plugin\Field\FieldFormatter\AddressDefaultFormatter::viewElements
     $build = [
       '#prefix' => '<div class="address" translate="no">',
       '#suffix' => '</div>',
@@ -222,7 +223,8 @@ class Address extends WebformCompositeBase {
       ],
     ];
 
-    $country_code = $values['country_code'];
+    // @see \Drupal\address\Plugin\Field\FieldFormatter\AddressDefaultFormatter::viewElement
+    $country_code = $value['country_code'];
     $countries = $country_repository->getList();
     $address_format = $address_format_repository->get($country_code);
 
@@ -244,7 +246,7 @@ class Address extends WebformCompositeBase {
         '#type' => 'html_tag',
         '#tag' => 'span',
         '#attributes' => ['class' => [$class]],
-        '#value' => Html::escape($values[$property]),
+        '#value' => Html::escape($value[$property]),
         '#placeholder' => '%' . $field,
       ];
     }

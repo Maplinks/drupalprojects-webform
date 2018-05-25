@@ -203,9 +203,9 @@ class Address extends WebformCompositeBase {
     /** @var \CommerceGuys\Addressing\Country\CountryRepositoryInterface $country_repository */
     $country_repository = \Drupal::service('address.country_repository');
 
-    $value = $this->getValue($element, $webform_submission, $options);
+    $values = $this->getValue($element, $webform_submission, $options);
     // Skip if value or country code is empty.
-    if (empty($value) || empty($value['country_code'])) {
+    if (empty($values) || empty($values['country_code'])) {
       return [];
     }
 
@@ -222,21 +222,13 @@ class Address extends WebformCompositeBase {
       ],
     ];
 
-    $country_code = $value['country_code'];
+    $country_code = $values['country_code'];
     $countries = $country_repository->getList();
     $address_format = $address_format_repository->get($country_code);
-    $build['address_format'] = [
-      '#type' => 'value',
-      '#value' => $address_format,
-    ];
-    // Hard coding the locale.
-    $build['locale'] = [
-      '#type' => 'value',
-      '#value' => 'und',
-    ];
-    $build['country_code'] = [
-      '#type' => 'value',
-      '#value' => $country_code,
+
+    $build += [
+      '#address_format' => $address_format,
+      '#locale' => 'und',
     ];
     $build['country'] = [
       '#type' => 'html_tag',
@@ -245,18 +237,18 @@ class Address extends WebformCompositeBase {
       '#value' => Html::escape($countries[$country_code]),
       '#placeholder' => '%country',
     ];
-    $used_fields = $this->getElementProperty($build, 'used_fields');
-    foreach ($used_fields as $field) {
+    foreach ($address_format->getUsedFields() as $field) {
       $property = FieldHelper::getPropertyName($field);
       $class = str_replace('_', '-', $property);
       $build[$property] = [
         '#type' => 'html_tag',
         '#tag' => 'span',
         '#attributes' => ['class' => [$class]],
-        '#value' => (isset($value[$property])) ? Html::escape($value[$property]) : '',
+        '#value' => Html::escape($values[$property]),
         '#placeholder' => '%' . $field,
       ];
     }
+
     return $build;
   }
 

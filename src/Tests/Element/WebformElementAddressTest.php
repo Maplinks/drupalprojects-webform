@@ -136,11 +136,6 @@ address_multiple:
     foreach ($schema['columns'] as $column_name => $column) {
       $this->assertEqual($composite_elements[$column_name]['#maxlength'], $column['length']);
     }
-
-    // Check used fields against address schema.
-    $diff_used_fields = array_diff_key($element_plugin->getDefaultProperty('used_fields'), LabelHelper::getGenericFieldLabels());
-    $this->debug($diff_used_fields);
-    $this->assert(empty($diff_used_fields));
   }
 
 }

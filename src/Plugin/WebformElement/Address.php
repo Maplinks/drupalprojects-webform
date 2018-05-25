@@ -2,6 +2,8 @@
 
 namespace Drupal\webform\Plugin\WebformElement;
 
+use CommerceGuys\Addressing\AddressFormat\FieldOverride;
+use CommerceGuys\Addressing\AddressFormat\AddressField;
 use Drupal\address\FieldHelper;
 use Drupal\address\LabelHelper;
 use Drupal\Component\Utility\Html;
@@ -42,7 +44,6 @@ class Address extends WebformCompositeBase {
       'default_value' => '',
       // Form validation.
       'required' => FALSE,
-      'required_error' => '',
       // Submission display.
       'format' => $this->getItemDefaultFormat(),
       'format_html' => '',
@@ -52,21 +53,9 @@ class Address extends WebformCompositeBase {
       'format_items_text' => '',
       // Address settings.
       'available_countries' => [],
-      'used_fields' => [
-        'administrativeArea' => 'administrativeArea',
-        'locality' => 'locality',
-        'dependentLocality' => 'dependentLocality',
-        'postalCode' => 'postalCode',
-        'sortingCode' => 'sortingCode',
-        'addressLine1' => 'addressLine1',
-        'addressLine2' => 'addressLine2',
-        'organization' => 'organization',
-        'givenName' => 'givenName',
-        'additionalName' => 'additionalName',
-        'familyName' => 'familyName',
-      ],
+      'field_overrides' => [],
       'langcode_override' => '',
-    ] + static::getDefaultMultipleProperties();
+    ] + $this->getDefaultBaseProperties() + $this->getDefaultMultipleProperties();
     unset($properties['multiple__header']);
     return $properties;
   }
@@ -277,6 +266,12 @@ class Address extends WebformCompositeBase {
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
+    // Get field overrider from element properties.
+    $element_properties = $form_state->get('element_properties');
+    $field_overrides = $element_properties['field_overrides'];
+    unset($element_properties['field_overrides']);
+    $form_state->set('element_properties', $element_properties);
+
     $form['address'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Address settings'),
@@ -303,13 +298,6 @@ class Address extends WebformCompositeBase {
       '#size' => 10,
     ];
     WebformElementHelper::enhanceSelect($form['address']['available_countries'], TRUE);
-    $form['address']['used_fields'] = [
-      '#type' => 'checkboxes',
-      '#title' => $this->t('Used fields'),
-      '#description' => $this->t('Note: an address used for postal purposes needs all of the fields.'),
-      '#required' => TRUE,
-      '#options' => LabelHelper::getGenericFieldLabels(),
-    ];
     $form['address']['langcode_override'] = [
       '#type' => 'select',
       '#title' => $this->t('Language override'),
@@ -318,6 +306,43 @@ class Address extends WebformCompositeBase {
       '#empty_option' => $this->t('- No override -'),
       '#access' => \Drupal::languageManager()->isMultilingual(),
     ];
+    $form['address']['field_overrides_title'] = [
+      '#type' => 'item',
+      '#title' => $this->t('Field overrides'),
+      '#description' => $this->t('Use field overrides to override the country-specific address format, forcing specific fields to always be hidden, optional, or required.'),
+      '#access' => TRUE,
+    ];
+    $form['address']['field_overrides'] = [
+      '#type' => 'table',
+      '#header' => [
+        $this->t('Field'),
+        $this->t('Override'),
+      ],
+      '#access' => TRUE,
+    ];
+    foreach (LabelHelper::getGenericFieldLabels() as $field_name => $label) {
+      $override = isset($field_overrides[$field_name]) ? $field_overrides[$field_name] : '';
+      $form['address']['field_overrides'][$field_name] = [
+        '#access' => TRUE,
+        'field_label' => [
+          '#access' => TRUE,
+          '#type' => 'markup',
+          '#markup' => $label,
+        ],
+        'override' => [
+          '#access' => TRUE,
+          '#type' => 'select',
+          '#default_value' => $override,
+          '#options' => [
+            FieldOverride::HIDDEN => t('Hidden'),
+            FieldOverride::OPTIONAL => t('Optional'),
+            FieldOverride::REQUIRED => t('Required'),
+          ],
+          '#empty_option' => $this->t('- No override -'),
+          '#parents' => ['properties', 'field_overrides', $field_name]
+        ],
+      ];
+    }
 
     return $form;
   }
@@ -327,7 +352,7 @@ class Address extends WebformCompositeBase {
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $values['used_fields'] = array_filter($values['used_fields']);
+    $values['field_overrides'] = array_filter($values['field_overrides']);
     $form_state->setValues($values);
     parent::validateConfigurationForm($form, $form_state);
   }

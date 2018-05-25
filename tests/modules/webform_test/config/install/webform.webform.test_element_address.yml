@@ -42,14 +42,13 @@ elements: |
       langcode: en
     '#available_countries':
       US: US
-    '#used_fields':
-      administrativeArea: administrativeArea
-      locality: locality
-      dependentLocality: dependentLocality
-      postalCode: postalCode
-      sortingCode: sortingCode
-      addressLine1: addressLine1
-      addressLine2: addressLine2
+    '#field_overrides':
+      givenName: hidden
+      additionalName: hidden
+      familyName: hidden
+      organization: hidden
+      sortingCode: hidden
+      dependentLocality: hidden
   address_none:
     '#type': address
     '#title': address_none

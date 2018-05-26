@@ -1,16 +1,14 @@
-uuid: 12b239dd-fa1b-4088-8618-314c647fe6a2
 langcode: en
 status: open
 dependencies:
   enforced:
     module:
       - webform_test
-_core:
-  default_config_hash: kyyNRfWF1NHfh_poj5Rv4SWs4N0Uh5DHEV9Mmak2DCU
 open: null
 close: null
 uid: null
 template: false
+archive: false
 id: test_element_address
 title: 'Test: Element: Address'
 description: 'Tests address element.'
